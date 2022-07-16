@@ -456,7 +456,7 @@ kubectl -n openshift-gitops -f application-frontend.yml
 ```
 
 ```
-
+argocd app sync frontend
 ```
 
 ## Clean Up
