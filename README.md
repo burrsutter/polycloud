@@ -372,6 +372,81 @@ https://kubernetes.default.svc                                              in-c
 
 ### Hub for Skupper ApplicationSet
 
+```
+kubectl -n openshift-gitops apply -f applicationset-skupper.yaml
+```
+
+No Applications yet 
+
+```
+argocd app list
+NAME  CLUSTER  NAMESPACE  PROJECT  STATUS  HEALTH  SYNCPOLICY  CONDITIONS  REPO  PATH  TARGET
+```
+
+```
+kubectl get secrets -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
+```
+
+```
+NAME                                                                                  TYPE     DATA   AGE
+cluster-34.116.80.226-2385601495                                                      Opaque   3      73m
+cluster-c66a1a362694283f399cd20ab42fb42c.gr7.eu-west-1.eks.amazonaws.com-3755022628   Opaque   3      74m
+cluster-tokyo-myakstokyoresour-75cfbc-8a30ee5c.hcp.japaneast.azmk8s.io-7543449        Opaque   3      76m
+```
+
+Now add the magic label to the secrets
+
+```
+kubectl label secret env=myapptarget -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
+```
+
+```
+argocd app list
+```
+
+```
+NAME            CLUSTER                                                                     NAMESPACE  PROJECT  STATUS     HEALTH   SYNCPOLICY  CONDITIONS  REPO                                     PATH                            TARGET
+skupper-dublin  https://C66A1A362694283F399CD20AB42FB42C.gr7.eu-west-1.eks.amazonaws.com    hybrid     default  OutOfSync  Missing  Auto-Prune  <none>      https://github.com/burrsutter/polycloud  argocd-skupper/overlays/dublin  main
+skupper-sydney  https://34.116.80.226                                                       hybrid     default                      Auto-Prune  <none>      https://github.com/burrsutter/polycloud  argocd-skupper/overlays/sydney  main
+skupper-tokyo   https://tokyo-myakstokyoresour-75cfbc-8a30ee5c.hcp.japaneast.azmk8s.io:443  hybrid     default  OutOfSync  Missing  Auto-Prune  <none>      https://github.com/burrsutter/polycloud  argocd-skupper/overlays/tokyo   main
+```
+
+```
+NAME            CLUSTER                                                                     NAMESPACE  PROJECT  STATUS  HEALTH   SYNCPOLICY  CONDITIONS  REPO                                     PATH                            TARGET
+skupper-dublin  https://C66A1A362694283F399CD20AB42FB42C.gr7.eu-west-1.eks.amazonaws.com    hybrid     default  Synced  Healthy  Auto-Prune  <none>      https://github.com/burrsutter/polycloud  argocd-skupper/overlays/dublin  main
+skupper-sydney  https://34.116.80.226                                                       hybrid     default  Synced  Healthy  Auto-Prune  <none>      https://github.com/burrsutter/polycloud  argocd-skupper/overlays/sydney  main
+skupper-tokyo   https://tokyo-myakstokyoresour-75cfbc-8a30ee5c.hcp.japaneast.azmk8s.io:443  hybrid     default  Synced  Healthy  Auto-Prune  <none>      https://github.com/burrsutter/polycloud  argocd-skupper/overlays/tokyo   main
+```
+
+### Tokyo
+
+```
+kubectl get pods -n hybrid
+NAME                                         READY   STATUS    RESTARTS   AGE
+skupper-router-74dc588d-x5ch8                2/2     Running   0          48s
+skupper-service-controller-d57558bf4-9x5th   1/1     Running   0          26s
+skupper-site-controller-56d886649c-7bb2s     1/1     Running   0          57s
+```
+
+### Dublin
+
+```
+kubectl get pods -n hybrid
+NAME                                          READY   STATUS    RESTARTS   AGE
+skupper-router-557c5f7-jfrk6                  2/2     Running   0          97s
+skupper-service-controller-69b54f6d68-q8dvr   1/1     Running   0          93s
+skupper-site-controller-56d886649c-xjgb2      1/1     Running   0          106s
+```
+
+### Sydney
+
+```
+kubectl get pods -n hybrid
+NAME                                          READY   STATUS    RESTARTS   AGE
+skupper-router-6566458c64-mqgd6               2/2     Running   0          2m4s
+skupper-service-controller-84d4f64b6d-r5v56   1/1     Running   0          38s
+skupper-site-controller-56d886649c-nsrz9      1/1     Running   0          2m12s
+```
 
 
 ## Clean Up
@@ -386,3 +461,4 @@ eksctl delete cluster --region=eu-west-1 --name=dublin
 ```
 gcloud container clusters delete sydney --region australia-southeast1
 ```
+
