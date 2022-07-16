@@ -459,6 +459,84 @@ kubectl -n openshift-gitops -f application-frontend.yml
 argocd app sync frontend
 ```
 
+Fail on OpenShift Gitops
+
+```
+deployments.apps is forbidden: User "system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller" cannot create resource "deployments" in API group "apps" in the namespace "hybrid"
+```
+
+Workaround https://access.redhat.com/solutions/5875661
+
+```
+cat <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  # "namespace" omitted since ClusterRoles are not namespaced
+  name: secrets-cluster-role
+rules:
+- apiGroups: [""] #specifies core api groups
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list"]
+EOF
+```
+
+```
+cat <<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+# This cluster role binding allows Service Account to read secrets in any namespace.
+kind: ClusterRoleBinding
+metadata:
+  name: read-secrets-global
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: secrets-cluster-role # Name of cluster role to be referenced
+subjects:
+- kind: ServiceAccount
+  name: argocd-cluster-argocd-application-controller
+  namespace: openshift-gitops 
+EOF
+```
+
+```
+argocd app sync frontend
+```
+
+### Backends
+
+```
+kubectl apply -f applicationset-backend.yaml
+```
+
+Add labels
+
+```
+kubectl label secret backend=processor -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
+```
+
+And in the spoke clusters you should find a pod and service called `backapi` 
+
+```
+kubectl get pods -n hybrid
+NAME                                          READY   STATUS    RESTARTS   AGE
+backapi-6ff86d5d88-sbtzw                      1/1     Running   0          93s
+skupper-router-5745754cbc-gfc4z               2/2     Running   0          3h50m
+skupper-service-controller-57b9b55cbd-d7pfj   1/1     Running   0          3h50m
+skupper-site-controller-56d886649c-8sg2w      1/1     Running   0          3h50m
+```
+
+```
+kubectl get services -n hybrid
+NAME                     TYPE           CLUSTER-IP     EXTERNAL-IP    PORT(S)                           AGE
+backapi                  ClusterIP      10.0.209.237   <none>         8080/TCP                          2m
+skupper                  LoadBalancer   10.0.82.248    20.89.31.219   8080:30937/TCP,8081:30172/TCP     3h50m
+skupper-router           LoadBalancer   10.0.149.118   20.89.30.222   55671:30796/TCP,45671:31628/TCP   3h51m
+skupper-router-console   ClusterIP      10.0.125.227   <none>         8080/TCP                          3h51m
+skupper-router-local     ClusterIP      10.0.191.19    <none>         5671/TCP                          3h51m
+```
+
+
 ## Clean Up
 ```
 az aks delete --resource-group myAKSTokyoResourceGroup --name tokyo
@@ -472,3 +550,6 @@ eksctl delete cluster --region=eu-west-1 --name=dublin
 gcloud container clusters delete sydney --region australia-southeast1
 ```
 
+```
+openshift-install --dir=<config-dir> destroy cluster
+```
