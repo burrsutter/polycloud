@@ -451,7 +451,13 @@ skupper-site-controller-56d886649c-nsrz9      1/1     Running   0          2m12s
 
 ## Frontend deployed to Hub
 
+```
+kubectl -n openshift-gitops -f application-frontend.yml
+```
 
+```
+
+```
 
 ## Clean Up
 ```
