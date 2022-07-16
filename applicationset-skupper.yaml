@@ -8,7 +8,7 @@ spec:
   - clusters:
       selector:
         matchLabels:
-          env: myapptarget
+          env: production
   template:
     metadata:
       name: 'skupper-{{name}}'
