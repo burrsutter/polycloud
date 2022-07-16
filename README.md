@@ -367,6 +367,9 @@ https://tokyo-myakstokyoresour-75cfbc-8a30ee5c.hcp.japaneast.azmk8s.io:443  toky
 https://kubernetes.default.svc                                              in-cluster           Unknown  Cluster has no application and not being monitored.
 ```
 
+![ArgoCD Clusters After](images/argocd-clusters-after.png)
+
+
 ### Hub for Skupper ApplicationSet
 
 
