@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: skupper
+  namespace: openshift-gitops
+spec:
+  generators:
+    - clusters:
+      selector:
+        matchLabels:
+          env: myapptarget
+  template:
+    metadata:
+      name: 'skupper-{{name}}'
+    spec:
+      project: default
+      source:
+        repoURL: 'https://github.com/burrsutter/polycloud'
+        targetRevision: main
+        path: 'argocd-skupper/overlays/{{name}}'
+      destination:
+        server: '{{server}}'
+        namespace: hybrid
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: false
+        syncOptions:
+          - CreateNamespace=true
+      ignoreDifferences:
+      - group: ""
+        kind: Secret
+        jsonPointers:
+        - /data
