@@ -397,7 +397,7 @@ cluster-tokyo-myakstokyoresour-75cfbc-8a30ee5c.hcp.japaneast.azmk8s.io-7543449  
 Now add the magic label to the secrets
 
 ```
-kubectl label secret env=myapptarget -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
+kubectl label secret env=production -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
 ```
 
 ```
@@ -447,6 +447,10 @@ skupper-router-6566458c64-mqgd6               2/2     Running   0          2m4s
 skupper-service-controller-84d4f64b6d-r5v56   1/1     Running   0          38s
 skupper-site-controller-56d886649c-nsrz9      1/1     Running   0          2m12s
 ```
+
+
+## Frontend deployed to Hub
+
 
 
 ## Clean Up
