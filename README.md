@@ -313,6 +313,29 @@ Use `admin` and the password found via `echo $ARGOCD_PASS`
 
 ![ArgoCD Clusters Before](images/argocd-clusters-before.png)
 
+### Hub Cluster Import
+
+```
+kubectl config get-contexts -o name
+```
+
+```
+admin
+default/api-ohio-burr-on-aws-com:6443/kube:admin
+```
+
+```
+argocd cluster add --kubeconfig $KUBECONFIG default/api-ohio-burr-on-aws-com:6443/kube:admin --name hub
+```
+
+```
+argocd cluster list
+SERVER                                 NAME        VERSION  STATUS      MESSAGE                                              PROJECT
+https://api.ohio.burr-on-aws.com:6443  hub         1.23     Successful
+https://kubernetes.default.svc         in-cluster           Unknown     Cluster has no application and not being monitored.
+```
+
+
 ### Tokyo ArgoCD Import
 
 ```
