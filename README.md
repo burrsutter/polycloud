@@ -340,6 +340,9 @@ https://kubernetes.default.svc         in-cluster           Unknown     Cluster 
 
 ```
 kubectl config get-contexts -o name
+```
+
+```
 tokyo
 ```
 
@@ -361,6 +364,9 @@ Cluster 'https://tokyo-myakstokyoresour-75cfbc-8a30ee5c.hcp.japaneast.azmk8s.io:
 
 ```
 kubectl config get-contexts -o name
+```
+
+```
 arn:aws:eks:eu-west-1:659615255973:cluster/dublin
 ```
 
@@ -372,6 +378,9 @@ argocd cluster add --kubeconfig $KUBECONFIG arn:aws:eks:eu-west-1:659615255973:c
 
 ```
 kubectl config get-contexts -o name
+```
+
+```
 gke_ocp42project_australia-southeast1_sydney
 ```
 
@@ -475,61 +484,43 @@ skupper-site-controller-56d886649c-nsrz9      1/1     Running   0          2m12s
 ## Frontend deployed to Hub
 
 ```
-kubectl -n openshift-gitops -f application-frontend.yml
+kubectl apply -n openshift-gitops -f applicationset-frontend.yml
+```
+
+Add label to the appropriate secret, first find the right secret
+
+```
+kubectl get secrets -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster --show-labels
 ```
 
 ```
-argocd app sync frontend
+NAME                                                                                TYPE     DATA   AGE   LABELS
+cluster-api.ohio.burr-on-aws.com-362486352                                          Opaque   3      59m   argocd.argoproj.io/secret-type=cluster,env=production
+cluster-tokyo-myakstokyoresour-75cfbc-7b81be80.hcp.japaneast.azmk8s.io-3166199456   Opaque   3      11m   argocd.argoproj.io/secret-type=cluster,env=production
 ```
 
-Fail on OpenShift Gitops
+Label the correct secret
 
 ```
-deployments.apps is forbidden: User "system:serviceaccount:openshift-gitops:openshift-gitops-argocd-application-controller" cannot create resource "deployments" in API group "apps" in the namespace "hybrid"
+ kubectl -n openshift-gitops label secret cluster-api.ohio.burr-on-aws.com-362486352 frontend=gui
 ```
 
-Workaround https://access.redhat.com/solutions/5875661
+And frontend deploys out to the Hub's hybrid namespace
 
 ```
-cat <<EOF | kubectl apply -f -
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  # "namespace" omitted since ClusterRoles are not namespaced
-  name: secrets-cluster-role
-rules:
-- apiGroups: [""] #specifies core api groups
-  resources: ["secrets"]
-  verbs: ["get", "watch", "list"]
-EOF
+kubectl get pods -n hybrid
+NAME                                          READY   STATUS    RESTARTS   AGE
+hybrid-cloud-frontend-86db4b879b-p4qrf        1/1     Running   0          16s
+skupper-router-5f7dc49dc7-lw5cj               2/2     Running   0          14m
+skupper-service-controller-7ffb977f78-kbrv2   1/1     Running   0          14m
+skupper-site-controller-855d8f9467-zm94l      1/1     Running   0          15m
 ```
 
-```
-cat <<EOF | kubectl apply -f -
-apiVersion: rbac.authorization.k8s.io/v1
-# This cluster role binding allows Service Account to read secrets in any namespace.
-kind: ClusterRoleBinding
-metadata:
-  name: read-secrets-global
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: secrets-cluster-role # Name of cluster role to be referenced
-subjects:
-- kind: ServiceAccount
-  name: argocd-cluster-argocd-application-controller
-  namespace: openshift-gitops 
-EOF
-```
-
-```
-argocd app sync frontend
-```
 
 ### Backends
 
 ```
-kubectl apply -f applicationset-backend.yaml
+kubectl apply -n openshift-gitops -f applicationset-backend.yaml
 ```
 
 Add labels
