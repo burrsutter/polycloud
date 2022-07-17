@@ -529,7 +529,7 @@ Add labels
 kubectl label secret backend=processor -n openshift-gitops -l argocd.argoproj.io/secret-type=cluster
 ```
 
-And in the spoke clusters you should find a pod and service called `backapi` 
+And in all clusters you should find a pod and service called `backapi` 
 
 ```
 kubectl get pods -n hybrid
