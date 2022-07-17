@@ -499,7 +499,7 @@ cluster-api.ohio.burr-on-aws.com-362486352                                      
 cluster-tokyo-myakstokyoresour-75cfbc-7b81be80.hcp.japaneast.azmk8s.io-3166199456   Opaque   3      11m   argocd.argoproj.io/secret-type=cluster,env=production
 ```
 
-Label the correct secret
+Label the correct secret, replacing the secret name with that found on your current hub cluster
 
 ```
  kubectl -n openshift-gitops label secret cluster-api.ohio.burr-on-aws.com-362486352 frontend=gui
@@ -548,6 +548,106 @@ skupper                  LoadBalancer   10.0.82.248    20.89.31.219   8080:30937
 skupper-router           LoadBalancer   10.0.149.118   20.89.30.222   55671:30796/TCP,45671:31628/TCP   3h51m
 skupper-router-console   ClusterIP      10.0.125.227   <none>         8080/TCP                          3h51m
 skupper-router-local     ClusterIP      10.0.191.19    <none>         5671/TCP                          3h51m
+```
+
+Testing frontend on the Hub with its "local" backapi service
+
+AWS clusters's
+```
+export FRONTEND_URL=$(kubectl -n hybrid get services hybrid-cloud-frontend -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'):8080
+```
+
+Non-AWS cluster's
+
+```
+export FRONTEND_URL=$(kubectl -n hybrid get services hybrid-cloud-frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}'):8080
+```
+
+```
+open http://$FRONTEND_URL
+```
+
+![Frontend Hub](images/frontend-hub.png)
+
+## Link up Skuppers
+
+Requires Skupper CLI https://skupper.io/install/index.html
+
+On Hub
+
+
+```
+skupper -n hybrid token create token.yaml -t cert
+```
+
+```
+skupper status
+Skupper is enabled for namespace "hybrid" with site name "hub" in interior mode. It is not connected to any other sites. It has 1 exposed service.
+The site console url is:  https://skupper-hybrid.apps.ohio.burr-on-aws.com
+The credentials for internal console-auth mode are held in secret: 'skupper-console-users'
+```
+
+The exposed Service is due to a specific annotation on the backend Deployment https://github.com/burrsutter/polycloud/blob/main/argocd-backend/base/backend.yaml#L8
+
+
+On each Spoke,
+
+```
+skupper -n hybrid link create token.yaml
+```
+
+```
+skupper link status
+```
+
+```
+Link link1 is active
+```
+
+##  Fail-over
+
+On Hub,
+
+```
+curl $FRONTEND_URL/api/cloud
+```
+
+```
+hub:0%
+```
+
+```
+kubectl -n hybrid scale --replicas=0 deployment/backapi
+```
+
+```
+curl $FRONTEND_URL/api/cloud
+```
+
+```
+tokyo:0%
+```
+
+```
+while true
+do curl $FRONTEND_URL/api/cloud
+echo ""
+sleep .3
+done
+```
+
+```
+kubectl -n hybrid scale --replicas=1 deployment/backapi
+```
+
+```
+tokyo:24
+tokyo:25
+tokyo:26
+tokyo:27
+hub:0
+hub:1
+hub:2
 ```
 
 
